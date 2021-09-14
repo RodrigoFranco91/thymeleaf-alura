@@ -1,0 +1,128 @@
+Neste capítulo adicinamos o Bootstrap ao nosso projeto.
+
+
+1) O primeiro feito foi criar a página HTML do nosso projeto. Para isso criamos dentro da pasta template o arquivo home.html.
+Esse arquivo ficou:
+
+	<!DOCTYPE html>
+	<html>
+	<head>
+	<meta charset="UTF-8">
+	<title>Home.</title>
+	</head>
+	<body>
+		<div>
+			<div> Nome do Produto</div>
+			<div> Valor: <span>200,99</span></div>
+			<div> Data da entrega: <span>10/02/2020</span></div>
+			
+			<div> Produto</div>
+			<div> url do produto</div>
+			
+			<div> Descrição:</div>
+			<div>
+				<textarea>descrição do pedido</textarea>
+			</div>
+			
+			<div>
+				<img src="" />
+			</div>
+		</div>
+	</body>
+	</html>
+	
+2) Depois criamos a classe HomeController para exibir essa página. Veja como ficou:
+
+	@Controller
+	public class HomeController {
+		
+		@GetMapping("/home")
+		public String home() {
+			return "home";
+		}
+
+	}
+	
+3) Criamos a classe Modelo de Pedido. Veja:
+
+	public class Pedido {
+		
+		private String nomeProduto;
+		private BigDecimal valorNegociado;
+		private LocalDate dataDaEntrega;
+		private String urlProduto;
+		private String urlImagem;
+		private String descricao;
+		
+		//Criar os getters e setters
+	}
+	
+4) No método home() da classe HomeController, criamos um Pedido, adicionamos esse pedido em uma lista e enviamos essa lista para a 
+página HTML. Veja:
+
+	@GetMapping("/home")
+	public String home(Model model) {
+		
+		Pedido pedido = new Pedido();
+		pedido.setNomeProduto("Xiaomi Redmi Note 8");
+		pedido.setUrlImagem("https://m.media-amazon.com/images/I/51kx1X-HduL._AC_SL1000_.jpg");
+		pedido.setUrlProduto("https://www.amazon.com.br/Smartphone-Xiaomi-Redmi-Note-Camera/dp/B07Z5BBG56");
+		pedido.setDescricao("Descrição dp Xiaomi");
+		
+		List<Pedido> pedidos = Arrays.asList(pedido);
+		model.addAttribute("pedidos", pedidos);
+		
+		return "home";
+	}
+	
+5) Na página home.html pegamos essa lista de pedido, atribuimos cada item da lista na variavel pedido 
+(th:each="pedido : ${pedidos}" e atraves da variável pedido atribuimos valores nos campos. Veja:
+
+	<body>
+
+		<!-- th:each é um laço de repetição. 
+			 O pedido é a variavel que representa o item em cada iteração
+			 O pedidos é o identificador da lista que o backend enviou	-->
+		<div th:each="pedido : ${pedidos}">
+			<div th:text="${pedido.nomeProduto}"> Nome do Produto</div>
+			<div> Valor: <span th:text="${pedido.valorNegociado}">200,99</span></div>
+			<div> Data da entrega: <span th:text="${pedido.dataDaEntrega}">10/02/2020</span></div>
+			
+			<div> Produto</div>
+			<div> <input type="text" th:value="${pedido.urlProduto}" value="url do produto"> </div>
+			
+			<div> Descrição:</div>
+			<div>
+				<textarea th:text="${pedido.descricao}">descrição do pedido</textarea>
+			</div>
+			
+			<div>
+				<img th:src="${pedido.urlImagem}" src="" />
+			</div>
+		</div>
+	</body>
+	
+	
+Siga agora o passo a passo para adicionar o Bootstrap no nosso projeto e fazer os ajustes mais simples.
+
+1) Entramos no site https://getbootstrap.com/docs/5.0/getting-started/introduction/ e pegamos a tag link do CSS do bootstrap. No 
+caso:
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/
+azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+
+2) Colocamos a tag <link> dentro da tag <head> da página html.
+
+3) Acessamos a página component do bootstrap para vermos quais as classes CSS que podemos aplicar para personalizar os elementos do
+HTML.
+
+4) Devemos agora ir consultando a documentação do Bootstrap para pegar as classes. Lembre-se de colocar tudo dentro da div com 
+class container.
+
+5) Para posicionamento dos elementos (por exemplo a imagem) devemos usar o Grid do Bootstrap. o Grid é feito por 12 colunas.
+Entao na div devemos usar a classe col-(numero até 12). Para definir elementos na mesma linha usamos a div com a classe row.
+Lembre-se que a classe col-x vai definir a quantidade de linha para qualquer tamanho de tela, para podermos mudar o 
+comportamento de acordo com o tamanho da tela temos que usar outras classes. Tenha em mente que podemos usar várias classes 
+col-x ao mesmo tempo.
+
+

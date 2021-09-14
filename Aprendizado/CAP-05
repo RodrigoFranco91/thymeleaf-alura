@@ -1,0 +1,150 @@
+Neste capítulo vamos aplicar validação no formulário.
+
+
+Para validar os atributos do objeto Pedido vamos usar o Bean Validation e para usá-lo precisamos adicionar sua dependencia no arquivo
+pom.xml. Sua dependencia é:
+
+	<dependency>
+	      <groupId>org.springframework.boot</groupId>
+	      <artifactId>spring-boot-starter-validation</artifactId>
+	</dependency>
+	
+Embora estejamos salvando um Pedido no banco a classe que vai receber as anotações de validação será a classe RequisicaoNovoPedido,
+pos é ela a casca que recebe os dados digitado pelo cliente. Siga o passo a passo:
+
+1) Adicione a dependencia citada no arquivo pom.xml;
+
+2) Na clase RequisicaoNovoPedido, adicionar nos atributos a anotação da Validação que desejas fazer. Por enquanto deixamos assim:
+
+	public class RequisicaoNovoPedido {
+
+		@NotBlank
+		private String nomeProduto;
+		
+		@NotBlank
+		private String urlProduto;
+		
+		@NotBlank
+		private String urlImagem;
+		private String descricao;
+
+	
+		//Getters e setters omitidos
+	}
+	
+3) Agora no método novo() da classe PedidoController temos que configurar para indicare que vamos validar o objeto RequisicaoNovoPedido
+e para isso basta adicionar a anotação @Valid. Vamos criar mais um argumento no método novo() que será do tipo BidingResult, este serve
+para pegar o resultado da validação (se passou ou se deu erro). Veja como ficou:
+
+	//A classe RequisicaoNovoPedido será uma classe DTO.
+	//Os atributos RequisicaoNovoPedido deve ter atributos com o mesmo nome dado ao name no formulário
+	//@Valid é para ocorrer a validação das anotacoes do BeanValidation
+	//O BindingResult é quem terá o resultado da validação (se hou ou não erro)
+	@PostMapping("/novo")
+	public String novo(@Valid RequisicaoNovoPedido requisicao, BindingResult result) {
+		
+		//Se tiver erro, volte para tela do formulario
+		if(result.hasErrors()) {
+			return "pedido/formulario";
+		}
+		
+4) Já viu aqueles formulários que quando preenchemos algo errado o formulário volta a ser exibido, mas os valores digitados não foram
+perdidos? Podemos fazer isso aqui, basta vincular o <form> com o objeto RequisicaoNovoPedido, mas teremos que usar a primeira letra
+minuscula. Depois disso basta vincular cada <input> com o atributo de RequisicaoNovoPedido. Tenha em mente que para receber o objeto
+RequisicaoNovoPedido no HTML temos que usar ${} e para acessar atributos de um objeto no HTML vamos usar *{}. Veja como ficou o form:
+
+<form th:object="${requisicaoNovoPedido}" class="card-body" action="/pedido/novo" method="post">
+	<div class="form-group">
+		<label for="nomeProduto">Produto</label>
+		<input th:field="*{nomeProduto}" class="form-control" name="nomeProduto" placeholder="nome do produto"/>
+		<small>informa qual o nome do produto</small>
+	</div>
+	<div class="form-group mt-3">
+		<label for="urlProduto">Url</label>
+		<input th:field="*{urlProduto}" class="form-control" name="urlProduto" placeholder="url do produto"/>
+		<small>procure em um site o produto que você deseja e cole sua url</small>
+	</div>
+	<div class="form-group mt-3">
+		<label for="urlImagem">Imagem</label>
+		<input th:field="*{urlImagem}" class="form-control" name="urlImagem" placeholder="url da imagem"/>
+		<small>procure em um site a imagem do produto e cole sua url</small>
+	</div>
+	<div class="form-group mt-3">
+		<label for="descricao">Descricao</label>
+		<textarea class="form-control" name="descricao" placeholder="Adicione detalhes importantes do seu produto"></textarea>
+	</div>
+	<button class="btn btn-primary mt-3" type="submit">Cadastrar</button>
+</form>
+
+Tenha em mente que quando usamos o *{} já é criado para nos o ID, NAME E VALUE do <input> o id e name será o mesmo nome do atributo
+do objeto e o value será o valod que foi adicionado neste atributo, por isso podemos apagar as tag name dos nossos inputs (por baixo 
+dos panos vai ter).
+
+6) Mas agora ao tentar acessar a página do formulario com o path localhost:8080/pedido/formulario dá erro! Pois o método que trata
+a primeira requisição para exibir o formulario não passa como argumento o objeto RequisicaoNovoPedido e para criar o <form> e os 
+<input> precisamos agora deste objeto. Podemos corrigir isso colocando no método formulario() o argumento do tipo 
+RequisicaoNovoPedido. Veja como ficou:
+
+	@GetMapping("formulario")
+	public String formulario(RequisicaoNovoPedido requisicao) {
+		return "pedido/formulario";
+	}
+	
+7) Tenha em mente que o Spring já tem uma mensagem de erro padrão para cada Bean Validation, por exemplo se usuário tenta cadastrar
+pedido com o nome do produto em branco, sendo que o atributo nomeProduto está anotado com @NotBlank, o seguinte erro é disparado:
+
+	//Nome do erro é nome da anotação + nome da classe + nome atributo
+	//O erro sempre tem uma mensagem padrão.
+	NotBlank.requisicaoNovoPedido.nomeProduto = campo não pode ser branco
+	
+8) Agora devemos levar esses erros para o HTML e apresentá-los. Para isso vamos criar um <div> só para o erro e essa div usara o 
+atributo th:errors="*{nomeDoArgumento}">. Veja como ficou (ainda sem estilizar a mensagem de erro):
+
+<form th:object="${requisicaoNovoPedido}" class="card-body" action="/pedido/novo" method="post">
+				<div class="form-group">
+					<label for="nomeProduto">Produto</label>
+					<input th:field="*{nomeProduto}" class="form-control" placeholder="nome do produto"/>
+					<small>informa qual o nome do produto</small>
+					<div th:errors="*{nomeProduto}">
+						Erros do nome do produto
+					</div>
+				</div>
+				
+9) Para estilizar o erro temos uma pegadinha. O bootstrap dá a class "invalid-feedback" e vamos colocá-la nos <div> do erro. Mas
+para funcionar temos que adicionar outra class, a "is-inbvalid" na tag <input>, mas só queremos colocar essa classe no input se
+houver erro. Então adicionamos essa class da seguinte forma:
+
+	<div class="form-group">
+		<label for="nomeProduto">Produto</label>
+		<input th:field="*{nomeProduto}" th:errorclass="is-invalid" class="form-control" placeholder="nome do produto"/>
+		<small>informa qual o nome do produto</small>
+		<div class="invalid-feedback" th:erros="*{nomeProduto}">
+			Erros do nome do produto
+		</div>
+	</div>
+	
+10) Podemos ainda criar a nossa própria mensagem de erro. Há duas maneiras:
+
+Maneira 1:
+
+	Na anotação, usar o atributo message, ficando assim:
+	
+		@NotBlank(message = "AQUI VAI SUA MENSAGEM")
+		private String nomeProduto;
+
+Maneira 2:
+
+	Na pasta src/main/resources devemos criar um arquivo (file) com o nome messages.properties e mapear o nome do erro com
+	mensagem, por exemplo:
+	
+		NotBlank.requisicaoNovoPedido.nomeProduto=O campo nome produto é obrigatŕoio!
+		
+	Lembre-se de deixar o arquivo messages.properties com UTF-8 e a mensagem de erro não tem aspas!
+	
+	
+	
+	
+	
+	
+	
+	

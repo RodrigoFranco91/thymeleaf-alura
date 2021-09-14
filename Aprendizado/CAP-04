@@ -1,0 +1,85 @@
+Neste capitulo vamos falar e implementar o formulário de cadastro de Pedido. O cadastro vai ter validação.
+
+
+Para levar para a tela de fomulário teremos que criar na página HTML home um botão. Para isso siga o passo a passo:
+
+1) No arquivo home.html criamos o botão novo para levar até o formulário de cadastro.
+
+2) Ainda nesse arquivo HTML criamos todos os link de navegação e o banner do nosso site. Veja como ficou:
+
+
+O botão criado para levar para tela de formulário dispara o path: pedido/formulario, mas ainda não temos nenhuma classe e método 
+mapeados para tratar isso. Siga o passo a passo para fazer:
+
+1) Criar a classe PedidoController. Essa deve ser anotada com @Controller e @RequestMapping("pedido"), desta forma estamos falando
+que essa classe é controller e que toda requisição com /pedido vai cair nesta classe;
+
+2) Criar o método formulario() anotado com @GetMapping("formulario")
+
+3) Sabemos que todas as páginas HTML ficam dentro da pasta template, mas podemos organizá-las ainda mais, pois podemos criar outras
+pastas dentro de template. Então dentro de templates vamos criar a pasta pedido.
+
+4) Dentro da pasta templates/pedido vamos criar a página formulario.html. Lembre-se que deve ser metodo post.
+
+5) O método formulario() da classe PedidoController por enquanto ficará assim:
+
+	@Controller
+	@RequestMapping("pedido")
+	public class PedidoController {
+		
+		@GetMapping("formulario")
+		public String formulario() {
+			return "pedido/formulario";
+		}
+
+	}
+	
+6) O form criado na página formulario.html está com o parametro action com valor: /pedido/novo, ou seja sabemos que a classe que vai
+tratar essa requisição será a classe PedidoControler (está mapeaa para tratar /pedido). Agora temos que criar o método para tratar
+o /novo. Esse método é que vai salvar o novo pedido no banco de dados.
+
+7) Como o método novo() vai pegar os valores do formulário? O Spring faz isso automaticamente, basta colocar no método um argumento
+que contenha os atributos com o mesmo nome que os name do formulário. Então vamos criar a classe RequisicaoNovoPedido, essa será uma
+classe DTO, ou seja, apenas uma casca para receber os atributos. Veja como ficou a classe:
+
+	public class RequisicaoNovoPedido {
+
+		private String nomeProduto;
+		private String urlProduto;
+		private String urlImagem;
+		private String descricao;
+		
+		//GETTER E SETTERS
+		
+		public Pedido toPedido() {
+		Pedido pedido = new Pedido();
+		pedido.setNomeProduto(this.nomeProduto);
+		pedido.setDescricao(this.descricao);
+		pedido.setUrlImagem(this.urlImagem);
+		pedido.setUrlProduto(this.urlProduto);
+		return pedido;
+	}	
+	}
+	
+8) Agora podemos implementar o método novo(), ele vai receber um RequisicaoNovoPedido como argumento e usuará o PedidoRepository para
+salvar o Pedido (lembre-se de anotá-lo com @Autowired para o Spring criar esse objeto). Veja como ficou o metodo novo da classe
+PedidoRepository:
+
+	@PostMapping("/novo")
+	public String novo(RequisicaoNovoPedido requisicao) {
+		
+		//Transformando um DTO em Entity
+		Pedido pedido = requisicao.toPedido();
+		repository.save(pedido);
+		
+		return "pedido/formulario";
+	}
+	
+Veja que após salvar o pedido, o retorno é para o formulário de cadastro novamente. Depois vamos mudar isso.
+
+
+Perguntas e respostas:
+
+Vimos que o Spring consegue popular os dados da requisição automaticamente. Até criamos uma classe DTO auxiliar para tal.
+Para esclarecer, como o Spring sabe qual campo de texto do HTML vai para qual atributo do objeto DTO?
+Resposta: Ele bate o name do input no HTML com o nome do atributo na classe.

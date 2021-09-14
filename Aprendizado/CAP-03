@@ -1,0 +1,100 @@
+Neste capítulo fizemos a integração com o Spring Data para persistir os dados.
+
+Siga o passo a passo para isso:
+
+1) Temos que adicionar novas dependencias no nosso projeto, então no arquivo pom.xml tenho que por o Spring Data e o Driver do MySql.
+Consigo esse conteudo pesquisando na net ou então ainda mais fácil, eu crio um projeto no site so spring com essas dependencias, mas
+no lugar de fazer download eu clico em explore, assim vou ver as dependencias dentro do site.
+
+2) Configurar as propriedades do banco de dados. Pegamos isso no próprio site do spring e para achar o conteudo digitei "spring guides 
+jpa mysql" no google. O conteúdo é:
+
+	spring.jpa.hibernate.ddl-auto=update
+	spring.datasource.url=jdbc:mysql://localhost:3306/mudi
+	spring.datasource.username=root
+	spring.datasource.password=mysql
+	spring.jpa.show-sql: true
+	
+3) Configuramos nossa classe modelo Pedido para ser uma entidade (tabela do banco de dados). A tabela Pedido ficou assim:
+
+	@Entity
+	public class Pedido {
+		
+		@Id
+		@GeneratedValue(strategy = GenerationType.IDENTITY)
+		private Long id;
+		private String nomeProduto;
+		private BigDecimal valorNegociado;
+		private LocalDate dataDaEntrega;
+		private String urlProduto;
+		private String urlImagem;
+		private String descricao;
+	
+		//GETTERS E SETTERS E CONSTRUTOR DEFAULT
+	} 
+	
+4) Criamos um registro diretamente no banco de dados. O comando foi:
+
+INSERT INTO pedido (descricao, nome_produto, url_imagem, url_produto) VALUES ('Descrição dp Xiaomi', 'Xiaomi Redmi Note 8', 
+'https://m.media-amazon.com/images/I/51kx1X-HduL._AC_SL1000_.jpg', 
+'https://www.amazon.com.br/Smartphone-Xiaomi-Redmi-Note-Camera/dp/B07Z5BBG56');
+
+5) No metodo home da classe HomeController vamos fazer a busca no banco de dados de todos os pedidos. Tivemos que criar na classe
+um atributo do tipo EntityManager anotado com @PersistenceContext, dessa forma o Spring cria esse objeto para nos. Veja como ficou:
+
+	@Controller
+	public class HomeController {
+		
+		//Spring cria um EntityManager para nós.
+		@PersistenceContext
+		private EntityManager em;
+		
+		@GetMapping("/home")
+		public String home(Model model) {
+			
+			//Buscando no banco de dados todos pedidos.
+			Query query = em.createQuery("SELECT p FROM Pedido p", Pedido.class);
+			List<Pedido> pedidos = query.getResultList();
+			
+			model.addAttribute("pedidos", pedidos);
+			
+			return "home";
+		}
+
+	}
+	
+6) Mas agora nossa classe HomeController ta fazendo muita coisa, essa classe sabe tratar a requisição e acessar o banco de dados. 
+Isso não é bom! Vamos isolar a funcionalidade de acessar o banco em classes do tipo Repository. Mas no lugar de só colocar esse mesmo
+código no Repository, vamos usar algo que o Spring já nos da pronto! Que é um Repository para cada modelo nosso!
+
+Vamos então criar a interface chamada PedidoRepository, essa deve herdar de JPARepository<Pedido, Long>. O primeiro agumento é o tipo
+de Item a ser retornado em cada busca e o segundo argumento é o tipo do identificador que esses itens possuem. Veja como ficou:
+
+	@Repository
+	public interface PedidoRepository extends JpaRepository<Pedido, Long> {
+
+	}
+
+7) Vamos agora usar o PedidoRepository dentro da classe HomeController. Nessa classe vamos criar um atributo do tipo PedidoRepository
+e anotá-lo com @Autowired, dessa forma o Sprig cria esse objeto pra nós. Veja:
+
+@Controller
+public class HomeController {
+	
+
+	//Spring injetando um PedidoRepository para nós.
+	@Autowired
+	private PedidoRepository pedidoRepository;
+	
+	@GetMapping("/home")
+	public String home(Model model) {
+		
+		//Buscando no banco agora com Repository
+		List<Pedido> pedidos = pedidoRepository.findAll();
+		
+		model.addAttribute("pedidos", pedidos);
+		
+		return "home";
+	}
+
+}

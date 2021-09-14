@@ -1,0 +1,78 @@
+Neste primeiro capítulo aprendemos o que é o Spring e como criar um projeto usando Spring Boot
+
+
+Perguntas e respostas deste capítulo:
+
+Servlet container que implementa o protocolo HTTP? TomCat.
+
+Responsável pela persistência de dados? Spring Data.
+
+Framework que ajuda no desenvolvimento de aplicações Web? É o Spring MVC. Ele facilita o trabalho com o protocolo HTTP e a criação de HTML dinamicamente, seguindo boas práticas de desenvolvimento.
+
+Um framework Java para inicializar e rodar uma aplicação web? Spring Boot.
+
+
+Aprendemos que os métodos anotados com @GetMapping, @PostMapping, etc, são chamados de Action.
+
+
+Aprendemos que nossas Actions, ou seja, métodos de uma classe Controller irá retonar uma String, e essa String deve ser o nome do
+arquivo HTML que queremos mostrar ao Cliente (Solicitande da requisição).
+
+Aprendemos também que todo arquivo HTML (página web) deve ficar dentro da pasta: templates. Seu endereço completo é 
+src/main/resource/templates
+
+Aprendemos ainda duas maneiras de tornar o página HTML dinâmica, ou seja, por exemplo inserir dentro do HTML dados obtidos do banco
+de dados. A primeira maneira é usado o parâmetro HttpServletRequest (um modo mais baixo nível) e a segunda maneira é usando o argumento
+do tipo Model (é a maneira que o Spring implementa). Veja o código de cada maneira:
+
+Maneira 1, com HttpServletRequest:
+
+	@Controller
+	public class HelloController {
+		
+		@GetMapping("/hello")
+		public String hello(HttpServletRequest request) {
+			
+			//O primeiro atributo é o identificador do valor enviado para HTML. É através dele que vamos
+			// acessar o valor.
+			request.setAttribute("nome", "Rodrigo");
+			
+			return "hello";
+		}
+
+	}
+
+Maneira 2, com Model:
+
+	@Controller
+	public class HelloController {
+		
+		@GetMapping("/hello")
+		public String hello(Model model) {
+			
+			//O primeiro atributo é o identificador do valor enviado para HTML. É através dele que vamos
+			// acessar o valor.
+			model.addAttribute("nome", "Rodrigo Franco");
+			
+			return "hello";
+		}
+
+	}
+	
+Modo que o arquivo HTML pega o valor da variável enviado a ela (será igual usando Model ou HttpServletRequest). Usamos o :
+th:text="${nome}"
+
+	<!DOCTYPE html>
+	<html>
+	<head>
+	<meta charset="UTF-8">
+	<title>Página de Boas Vindas</title>
+	</head>
+	<body>
+		<h1>Oi, <span th:text="${nome}">fulano</span>!</h1>
+	</body>
+	</html>
+	
+	
+Qual a vantagem do Thymeleaf ao JSP? Thymeleaf preserva o HTML e não introduz novas tags, como o JSP. Tanto que você podemos abrir a 
+página HTML diretamente no navegador para pré-visualizar o resultado.

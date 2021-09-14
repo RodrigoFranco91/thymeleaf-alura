@@ -1,0 +1,130 @@
+Neste capitulo fizemos ajustes finais, como formatar data no html e adicionar uma class de CSS de acordo com a situação.
+
+Sabemos que nosso peido ao ser criado terá o Status: Aguardando.
+Mas esse Status vai mudando conforme açoes dos usuários, o status ainda pode ser Aprovado e Entregue.
+
+Só que ainda o modelo Pedido não tem o atributo status. Siga o passo a passo para implementar tudo isso:
+
+1) Na classe Pedido crie um atributo do tipo StatusPedido. Veja como ficará:
+
+	@Enumerated(EnumType.STRING)
+	private StatusPedido status;
+	
+Lembre-se de criar um getStatus();
+	
+2) O StatusPedido deve ser um ENUM. Veja:
+
+	public enum StatusPedido {
+
+		AGUARDANDO, APROVADO, ENTREGUE;
+		
+	}
+
+3) Queremos mudar o HTML de acordo com o Status do Pedido. Se for AGUARDANDO quero mostrar o Pedido na cora amarela, e assim por diante
+Para fazer isso:
+
+	A <div> que queremos mudar a cor é essa:
+	
+		<div class="card-header" th:text="${pedido.nomeProduto}"> Nome do Produto</div>
+		
+	Então devemos colocá-la dentro de um IF, no caso vamos usar o switch. Veja como vai ficar:
+	
+	<th:block th:switch="${pedido.status.name()}">
+		<div th:case="'AGUARDANDO'" class="card-header alert-warning" th:text="${pedido.nomeProduto}"> Nome do Produto</div>
+		<div th:case="'APROVADO'" class="card-header alert-success" th:text="${pedido.nomeProduto}"> Nome do Produto</div>
+		<div th:case="'ENTREGUE'" class="card-header alert-dark" th:text="${pedido.nomeProduto}"> Nome do Produto</div>
+	</th:block>
+	
+Veja que tivemos que usar o <th:block th:switch="${pedido.status.nome()}"> para criar o switch. status é o atributo do tipo ENUM do
+Pedido e nome() é para pegar o valor do ENUM em formato String.
+
+Lembre-se de alterar os registros já salvos! Eles devem ter um Status.
+
+4) Após cadastrar um Pedido estamos sendo enviado para a página de Formulário, mas podemos melhorar isso. Agora após cadastrar um
+pedido devemos ir para página de listagem! E no lugar de chamar a página HTML vamos chamar a requisição que já faz a listagem 
+(Quando faço isso eu forço o cliente a fazer a requisição localhost:8080/home). Isso pode ser feito:
+
+		@PostMapping("/novo")
+		public String novo(@Valid RequisicaoNovoPedido requisicao, BindingResult result) {
+			
+			//Se tiver erro, volte para tela do formulario
+			if(result.hasErrors()) {
+				return "pedido/formulario";
+			}
+				
+			//Transformando um DTO em Entity
+			Pedido pedido = requisicao.toPedido();
+			repository.save(pedido);
+
+			return "redirect:/home";
+		}
+	}
+	
+	
+Agora vamos fazer os links dos status da página Home funcionar. Siga o passo a passo para isso:
+
+1) Vamos criar uma ação (método) dentro da classe PedidoController para fazer a busca de acordo com o  Status solicitado pelo cliente
+O metodo vai ficar assim:
+
+	@GetMapping("/{status}")
+	public String porStatus(Model model, @PathVariable("status") String status) {
+		
+		List<Pedido> pedidos = pedidoRepository.findByStatus(StatusPedido.valueOf(status.toUpperCase()));
+		
+		model.addAttribute("pedidos", pedidos);
+		model.addAttribute("status", status);
+		
+		return "home";
+	}
+	
+Veja que usamos o método findByStatus() de PedidoRepository, logo o proximo passo será criá-lo.
+Veja também que o Status que essa requisição vai tratar será enviado como String para a página HTML, veremos o motivo disso depois.
+
+2) Na interface PedidoRepository devemos criar o método findByStatus(). Veja como vai ficar:
+
+	@Repository
+	public interface PedidoRepository extends JpaRepository<Pedido, Long> {
+
+		List<Pedido> findByStatus(StatusPedido status);
+
+	}
+	
+3) Na classe PedidoController vamos criar uma action (método) para tratar quando ocorrer o erro IllegalArgumentException. Isso pode
+ocorrer quando alguem digitar diretamente no path (navegador) um status que não existe. Quando isso ocorrer podemos retornar a 
+listagem geral de pedido. Veja como ficou:
+
+	@ExceptionHandler(IllegalArgumentException.class)
+	public String onError() {
+		return "redicrect:/home";
+	}
+	
+Com redirect temos o redirecionamento Client-Side, ou seja, o cliente é forçado a fazer a requisição localhost:8080/home
+Existe ainda o redirecionamento Server-sidve, seria feito com a palavra forward, neste caso não se cria uma nova requisiçao.
+	
+4) Agora de acordo com o Status vamos aplicar a classe ACTIVE do CSS nos pedidos! Por isso que ao receber a requisição, nós 
+devolvemos o valor do status para o HTML. Veja como vai ficar:
+
+<div class="navbar-nav">
+	<a th:classappend="${status} == 'null' ? 'active'" class="nav-item nav-link " href="/home">Todos</a>
+	<a th:classappend="${status} == 'aguardando' ? 'active'" class="nav-item nav-link" href="/home/aguardando">Aguardando</a>
+	<a th:classappend="${status} == 'aprovado' ? 'active'" class="nav-item nav-link" href="/home/aprovado">Aprovado</a>
+	<a th:classappend="${status} == 'entregue' ? 'active'" class="nav-item nav-link" href="/home/entregue">Entregue</a>
+</div>
+
+Usamos o th:classappend="" para fazer isso.
+Veja também que agora o href foi preenchido com o link (path). Dessa forma o path vai estar completo, por exemplo: 
+localhost:8080/home/aguardando
+
+
+Agora vamos ajustar o preço e a data de pedido para serem exibidos no HTML.
+Lembre-se de adicionar o Preço e a Data nos registros salvos no banco. Siga o passo a passo:
+
+1) Devemos deixar as div de data de entrega e valor da seguinte forma:
+
+<div class="col-md-5"> Valor: <span th:if="${pedido.valorNegociado != null}" th:text="${'R$ ' + 
+#numbers.formatDecimal(pedido.valorNegociado,3,'POINT',2,'COMMA')}">200,99</span></div>
+
+<div class="col-md-7"> Data da entrega: <span th:text="${#temporals.format(pedido.dataDaEntrega, 'dd/MM/yyyy')}">10/02/2020</span>
+</div>
+
+2) Veja que dentro de th:text de cada div eu chamei uma função do Thymeleaf, uma para data e outra pora numeros com ponto e virgula.
